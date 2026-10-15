@@ -18,6 +18,7 @@ import {
   Scissors,
   Link,
   Image,
+  Workflow,
 } from 'lucide-react';
 
 interface EditorToolbarProps {
@@ -164,6 +165,15 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({ onInsertMarkdown }
         title="LaTeX / KaTeX Math Equation"
       >
         <Sigma className="w-4 h-4 text-sky-400" />
+      </button>
+
+      <button
+        type="button"
+        onClick={() => onInsertMarkdown('\n```mermaid\nflowchart TD\n    A([Start]) --> B[Process]\n    B --> C{Decision?}\n    C -->|Yes| D[Success]\n    C -->|No| E[Retry]\n    D --> F([End])\n```\n\n')}
+        className="p-1.5 hover:bg-slate-800 hover:text-white rounded transition-colors cursor-pointer"
+        title="Insert Mermaid Flowchart Diagram"
+      >
+        <Workflow className="w-4 h-4 text-violet-400" />
       </button>
 
       <button

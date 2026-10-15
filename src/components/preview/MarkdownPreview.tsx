@@ -1,5 +1,6 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { ZoomIn, ZoomOut, RotateCcw } from 'lucide-react';
+import mermaid from 'mermaid';
 import type { PageLayoutConfig, ThemeId } from '../../types/document';
 import { generateInlineStyles } from '../../services/styleGenerator';
 
@@ -31,6 +32,64 @@ export const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({
   const handleResetZoom = () => {
     setZoomLevel(100);
   };
+
+  // Render Mermaid Flowcharts and Diagrams whenever HTML changes
+  useEffect(() => {
+    let isCancelled = false;
+
+    const renderMermaid = async () => {
+      if (!printableRef.current) return;
+      const nodes = printableRef.current.querySelectorAll<HTMLElement>(
+        '.mermaid-diagram:not([data-processed="true"])'
+      );
+      if (nodes.length === 0) return;
+
+      try {
+        mermaid.initialize({
+          startOnLoad: false,
+          theme: 'default',
+          securityLevel: 'loose',
+          fontFamily: 'Inter, system-ui, sans-serif',
+        });
+      } catch {
+        // Ignore initialization warning
+      }
+
+      for (let i = 0; i < nodes.length; i++) {
+        const node = nodes[i];
+        const raw = node.getAttribute('data-code') || node.textContent || '';
+        const id = `mermaid-svg-${Date.now()}-${i}-${Math.random().toString(36).substring(2, 6)}`;
+
+        try {
+          const { svg } = await mermaid.render(id, raw.trim());
+          if (!isCancelled) {
+            node.innerHTML = svg;
+            node.setAttribute('data-processed', 'true');
+            const svgElement = node.querySelector('svg');
+            if (svgElement) {
+              svgElement.style.maxWidth = '100%';
+              svgElement.style.height = 'auto';
+              svgElement.style.display = 'block';
+              svgElement.style.margin = '0 auto';
+            }
+          }
+        } catch (error) {
+          console.warn('Mermaid render issue:', error);
+          node.setAttribute('data-processed', 'error');
+          const tmp = document.getElementById(id);
+          if (tmp) tmp.remove();
+          const dTmp = document.getElementById('d' + id);
+          if (dTmp) dTmp.remove();
+        }
+      }
+    };
+
+    const timer = setTimeout(renderMermaid, 50);
+    return () => {
+      isCancelled = true;
+      clearTimeout(timer);
+    };
+  }, [html, printableRef]);
 
   return (
     <div

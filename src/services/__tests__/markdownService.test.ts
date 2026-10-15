@@ -55,6 +55,19 @@ describe('markdownService', () => {
       expect(html).toContain('callout-note');
       expect(html).toContain('Note');
     });
+
+    it('should render fenced and unfenced Mermaid flowcharts into diagram wrappers', () => {
+      const fenced = '```mermaid\nflowchart TD\n    A([Start]) --> B[Open Website]\n```';
+      const htmlFenced = renderMarkdown(fenced);
+      expect(htmlFenced).toContain('mermaid-wrapper');
+      expect(htmlFenced).toContain('mermaid-diagram');
+      expect(htmlFenced).toContain('flowchart TD');
+
+      const unfenced = '# Process\n\nflowchart TD\n    A([Start]) --> B[Step 1]\n\n2. Next Section';
+      const htmlUnfenced = renderMarkdown(unfenced);
+      expect(htmlUnfenced).toContain('mermaid-wrapper');
+      expect(htmlUnfenced).toContain('mermaid-diagram');
+    });
   });
 
   describe('calculateDocumentMetrics', () => {

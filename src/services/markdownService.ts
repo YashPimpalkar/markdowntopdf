@@ -90,7 +90,17 @@ export function renderMarkdown(markdown: string): string {
     '\n\n<div class="page-break-divider print:hidden"><span class="page-break-badge">Page Break</span></div><div class="html2pdf__page-break print-page-break"></div>\n\n'
   );
 
-  // 4. Configure Marked instance with custom code renderer
+  // 4. Auto-detect unfenced flowcharts and wrap in mermaid code block
+  const codeParts = processed.split(/(```[\s\S]*?```)/g);
+  for (let i = 0; i < codeParts.length; i += 2) {
+    codeParts[i] = codeParts[i].replace(
+      /(^|\n)((?:flowchart|graph)\s+(?:TD|TB|BT|RL|LR)[\s\S]*?)(?=\n\s*(?:[0-9]+\.|\#{1,6}|<!--|---|===|\n\s*\n|$))/gi,
+      (_match, prefix, body) => `${prefix}\n\`\`\`mermaid\n${body.trim()}\n\`\`\`\n`
+    );
+  }
+  processed = codeParts.join('');
+
+  // 5. Configure Marked instance with custom code renderer
   const marked = new Marked({
     gfm: true,
     breaks: false,
@@ -100,7 +110,29 @@ export function renderMarkdown(markdown: string): string {
   marked.use({
     renderer: {
       code({ text, lang }) {
-        const language = (lang || '').split(/\s+/)[0] || 'text';
+        const cleanLang = (lang || '').split(/\s+/)[0].toLowerCase();
+        const trimmed = text.trim();
+
+        // Check if block is a Mermaid diagram / flowchart
+        if (
+          cleanLang === 'mermaid' ||
+          cleanLang === 'flowchart' ||
+          trimmed.startsWith('flowchart ') ||
+          trimmed.startsWith('flowchart\n') ||
+          trimmed.startsWith('graph ') ||
+          trimmed.startsWith('graph\n') ||
+          trimmed.startsWith('sequenceDiagram') ||
+          trimmed.startsWith('classDiagram') ||
+          trimmed.startsWith('stateDiagram') ||
+          trimmed.startsWith('erDiagram') ||
+          trimmed.startsWith('pie')
+        ) {
+          return `<div class="mermaid-wrapper my-6 p-4 rounded-xl border border-slate-200 bg-slate-50/50 flex justify-center items-center shadow-xs break-inside-avoid print:border-none print:shadow-none print:p-0 print:my-4 print:bg-transparent">
+            <div class="mermaid-diagram flex justify-center w-full" data-code="${escapeHtml(text)}">${escapeHtml(text)}</div>
+          </div>`;
+        }
+
+        const language = cleanLang || 'text';
         const highlighted = highlightCode(text, language);
         return `<div class="code-block-wrapper">
           <div class="code-block-header">
