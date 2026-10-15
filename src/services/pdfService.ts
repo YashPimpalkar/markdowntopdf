@@ -102,19 +102,9 @@ export async function downloadDirectPdf(
     }
   }
 
-  // Robust download trigger via Blob
-  const pdfBlob = pdf.output('blob');
-  const blobUrl = URL.createObjectURL(pdfBlob);
-  const downloadLink = document.createElement('a');
-  downloadLink.href = blobUrl;
-  downloadLink.download = filename;
-  document.body.appendChild(downloadLink);
-  downloadLink.click();
-
-  setTimeout(() => {
-    document.body.removeChild(downloadLink);
-    URL.revokeObjectURL(blobUrl);
-  }, 1000);
+  // Save PDF using native jsPDF save with verified .pdf extension
+  const finalFilename = filename.toLowerCase().endsWith('.pdf') ? filename : `${filename}.pdf`;
+  pdf.save(finalFilename);
 }
 
 /**
