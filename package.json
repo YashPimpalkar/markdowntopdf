@@ -8,6 +8,7 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "test": "vitest run",
+    "update-docs": "node scripts/auto_doc_updater.js",
     "preview": "vite preview"
   },
   "dependencies": {
