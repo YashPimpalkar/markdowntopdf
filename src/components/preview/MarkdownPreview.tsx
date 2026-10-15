@@ -3,6 +3,7 @@ import { ZoomIn, ZoomOut, RotateCcw } from 'lucide-react';
 import mermaid from 'mermaid';
 import type { PageLayoutConfig, ThemeId } from '../../types/document';
 import { generateInlineStyles } from '../../services/styleGenerator';
+import { sanitizeMermaidCode } from '../../services/markdownService';
 
 interface MarkdownPreviewProps {
   html: string;
@@ -44,12 +45,26 @@ export const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({
       );
       if (nodes.length === 0) return;
 
+      const isAcademic = themeId === 'academic';
+      const isTech = themeId === 'tech';
+      const isExecutive = themeId === 'executive';
+      const isEditorial = themeId === 'editorial';
+
       try {
         mermaid.initialize({
           startOnLoad: false,
           theme: 'default',
           securityLevel: 'loose',
-          fontFamily: 'Inter, system-ui, sans-serif',
+          fontFamily: isAcademic ? '"Merriweather", Georgia, serif' : 'Inter, system-ui, sans-serif',
+          themeVariables: {
+            primaryColor: isTech ? '#d1fae5' : isExecutive ? '#e0e7ff' : isEditorial ? '#fed7aa' : '#f1f5f9',
+            primaryTextColor: '#0f172a',
+            primaryBorderColor: isTech ? '#059669' : isExecutive ? '#4f46e5' : isEditorial ? '#ea580c' : '#475569',
+            lineColor: '#64748b',
+            secondaryColor: '#f8fafc',
+            tertiaryColor: '#ffffff',
+            fontSize: '13px',
+          },
         });
       } catch {
         // Ignore initialization warning
@@ -59,9 +74,10 @@ export const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({
         const node = nodes[i];
         const raw = node.getAttribute('data-code') || node.textContent || '';
         const id = `mermaid-svg-${Date.now()}-${i}-${Math.random().toString(36).substring(2, 6)}`;
+        const sanitized = sanitizeMermaidCode(raw.trim());
 
         try {
-          const { svg } = await mermaid.render(id, raw.trim());
+          const { svg } = await mermaid.render(id, sanitized);
           if (!isCancelled) {
             node.innerHTML = svg;
             node.setAttribute('data-processed', 'true');
@@ -73,13 +89,39 @@ export const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({
               svgElement.style.margin = '0 auto';
             }
           }
-        } catch (error) {
-          console.warn('Mermaid render issue:', error);
-          node.setAttribute('data-processed', 'error');
-          const tmp = document.getElementById(id);
-          if (tmp) tmp.remove();
-          const dTmp = document.getElementById('d' + id);
-          if (dTmp) dTmp.remove();
+        } catch {
+          // If initial render fails, try filtering out problematic non-core lines (like broken classDef)
+          try {
+            const fallbackCode = sanitized
+              .split('\n')
+              .filter((line) => {
+                const tr = line.trim();
+                if (tr.startsWith('classDef') && (!tr.includes(':') || !tr.includes(';'))) return false;
+                return true;
+              })
+              .join('\n');
+
+            const fallbackId = `${id}-fb`;
+            const { svg } = await mermaid.render(fallbackId, fallbackCode);
+            if (!isCancelled) {
+              node.innerHTML = svg;
+              node.setAttribute('data-processed', 'true');
+              const svgElement = node.querySelector('svg');
+              if (svgElement) {
+                svgElement.style.maxWidth = '100%';
+                svgElement.style.height = 'auto';
+                svgElement.style.display = 'block';
+                svgElement.style.margin = '0 auto';
+              }
+            }
+          } catch (fallbackError) {
+            console.warn('Mermaid render issue:', fallbackError);
+            node.setAttribute('data-processed', 'error');
+            const tmp = document.getElementById(id);
+            if (tmp) tmp.remove();
+            const dTmp = document.getElementById('d' + id);
+            if (dTmp) dTmp.remove();
+          }
         }
       }
     };

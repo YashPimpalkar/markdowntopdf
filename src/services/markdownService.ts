@@ -46,9 +46,58 @@ function highlightCode(code: string, language?: string): string {
   return escapeHtml(code);
 }
 
+
+/**
+ * Sanitizes Mermaid code to ensure robust parsing, neutralizing malformed classDef or comments
+ */
+export function sanitizeMermaidCode(code: string): string {
+  if (!code) return '';
+  const lines = code.split('\n');
+  const cleaned = lines.map((line) => {
+    const trimmed = line.trim();
+    // Neutralize malformed classDef statements that lack CSS properties (e.g. prompt notes)
+    if (trimmed.startsWith('classDef ')) {
+      const rest = trimmed.slice(9).trim();
+      if (!rest.includes(':') && !rest.includes(',')) {
+        return `    %% [Ignored non-CSS classDef]: ${trimmed}`;
+      }
+    }
+    return line;
+  });
+  return cleaned.join('\n');
+}
+
+/**
+ * Automatically wraps unfenced Mermaid diagrams into ```mermaid ... ``` code blocks
+ */
+export function autoFenceMermaid(text: string): string {
+  if (!text) return '';
+
+  // Split by existing fenced code blocks to prevent double-wrapping
+  const codeParts = text.split(/(```[\s\S]*?```)/g);
+
+  // Boundary lookahead matching next markdown header, numbered item, bullet, blockquote, page break, or diagram
+  const boundaryPattern =
+    '(?=(?:\\n\\s*(?:[0-9]+\\.\\s+|#{1,6}\\s+|[-*+]\\s+|>\\s+|<!--|---|===|\\\\pagebreak|(?:flowchart|graph)\\s+(?:TD|TB|BT|RL|LR)|sequenceDiagram|classDiagram|stateDiagram|erDiagram|pie)|\\s*$))';
+
+  const diagramRegex = new RegExp(
+    `(^|\\n)((?:flowchart|graph)\\s+(?:TD|TB|BT|RL|LR)[\\s\\S]*?)${boundaryPattern}`,
+    'gi'
+  );
+
+  for (let i = 0; i < codeParts.length; i += 2) {
+    codeParts[i] = codeParts[i].replace(diagramRegex, (_match, prefix, body) => {
+      const cleanedBody = sanitizeMermaidCode(body.trim());
+      return `${prefix}\n\`\`\`mermaid\n${cleanedBody}\n\`\`\`\n`;
+    });
+  }
+
+  return codeParts.join('');
+}
+
 /**
  * Transforms Markdown into styled HTML with KaTeX math, Prism syntax highlighting,
- * callout admonitions, and page breaks.
+ * callout admonitions, page breaks, and Mermaid flowcharts.
  */
 export function renderMarkdown(markdown: string): string {
   if (!markdown) return '';
@@ -90,15 +139,8 @@ export function renderMarkdown(markdown: string): string {
     '\n\n<div class="page-break-divider print:hidden"><span class="page-break-badge">Page Break</span></div><div class="html2pdf__page-break print-page-break"></div>\n\n'
   );
 
-  // 4. Auto-detect unfenced flowcharts and wrap in mermaid code block
-  const codeParts = processed.split(/(```[\s\S]*?```)/g);
-  for (let i = 0; i < codeParts.length; i += 2) {
-    codeParts[i] = codeParts[i].replace(
-      /(^|\n)((?:flowchart|graph)\s+(?:TD|TB|BT|RL|LR)[\s\S]*?)(?=\n\s*(?:[0-9]+\.|\#{1,6}|<!--|---|===|\n\s*\n|$))/gi,
-      (_match, prefix, body) => `${prefix}\n\`\`\`mermaid\n${body.trim()}\n\`\`\`\n`
-    );
-  }
-  processed = codeParts.join('');
+  // 4. Auto-detect unfenced flowcharts and wrap into ```mermaid code blocks
+  processed = autoFenceMermaid(processed);
 
   // 5. Configure Marked instance with custom code renderer
   const marked = new Marked({

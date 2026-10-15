@@ -68,6 +68,79 @@ describe('markdownService', () => {
       expect(htmlUnfenced).toContain('mermaid-wrapper');
       expect(htmlUnfenced).toContain('mermaid-diagram');
     });
+
+    it('should parse all 5 user test flowcharts correctly', () => {
+      const userSample = `Flowchart Test
+1. Basic Flowchart
+flowchart TD
+    A([Start]) --> B[Open Website]
+    B --> C[Enter Markdown]
+    C --> D[Click Convert to PDF]
+    D --> E{Conversion Successful?}
+    E -->|Yes| F[Download PDF]
+    E -->|No| G[Display Error]
+    F --> H([End])
+    G --> C
+
+2. User Login Flowchart
+flowchart TD
+    A([Start]) --> B[Enter Email and Password]
+    B --> C{Credentials Valid?}
+    C -->|Yes| D[Open Dashboard]
+    C -->|No| E[Show Error Message]
+    E --> F{Retry Login?}
+    F -->|Yes| B
+    F -->|No| G([Exit])
+    D --> H[Choose Action]
+    H --> I[Upload Markdown File]
+    H --> J[Write Markdown]
+    I --> K[Generate PDF]
+    J --> K
+    K --> L([Finish])
+
+3. Horizontal Flowchart
+flowchart LR
+    A[Markdown Input] --> B[Parse Markdown]
+    B --> C[Generate HTML]
+    C --> D[Apply CSS]
+    D --> E[Create PDF]
+    E --> F[Download PDF]
+
+4. Flowchart with Multiple Decisions
+flowchart TD
+    A([Start]) --> B{User Logged In?}
+    B -->|No| C[Show Login Page]
+    C --> D[Authenticate User]
+    D --> B
+    B -->|Yes| E{Input Type?}
+    E -->|Text| F[Markdown Editor]
+    E -->|File| G[Upload File]
+    F --> H[Validate Markdown]
+    G --> H
+    H --> I{Valid Input?}
+    I -->|No| J[Show Validation Error]
+    J --> H
+    I -->|Yes| K[Convert to PDF]
+    K --> L[Preview PDF]
+    L --> M([Complete])
+
+5. Styled Flowchart
+flowchart TD
+    A([Start]) --> B[Write Markdown]
+    B --> C[Preview Document]
+    C --> D{Looks Correct?}
+    D -->|Yes| E[Export PDF]
+    D -->|No| B
+    E --> F([Download])
+
+    classDef  add makeing  makrdown flowchart to  proepr flowchart
+`;
+      const html = renderMarkdown(userSample);
+      const matches = html.match(/class="mermaid-diagram/g);
+      expect(matches?.length).toBe(5);
+      const allCodes = [...html.matchAll(/data-code="([^"]+)"/g)].map(m => m[1]);
+      expect(allCodes[4]).toContain('Download');
+    });
   });
 
   describe('calculateDocumentMetrics', () => {
