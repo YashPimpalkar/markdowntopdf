@@ -414,9 +414,20 @@ export function generateInlineStyles(themeId: ThemeId, config: PageLayoutConfig)
       }
 
       *, *::before, *::after {
-        transform: none !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
         animation: none !important;
         transition: none !important;
+      }
+
+      .paper-sheet-zoom-wrapper {
+        transform: none !important;
+        display: block !important;
+      }
+
+      svg, svg * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
       }
 
       html, body, #root, .app-container, .preview-wrapper {
@@ -493,6 +504,57 @@ export function generateInlineStyles(themeId: ThemeId, config: PageLayoutConfig)
       pre, blockquote, table, tr, img, figure, .callout-box, .code-block-wrapper, .table-container {
         page-break-inside: avoid !important;
         break-inside: avoid !important;
+      }
+
+      .mermaid-wrapper {
+        display: block !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 1.5em 0 !important;
+        padding: 0 !important;
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+        page-break-inside: auto !important;
+        break-inside: auto !important;
+      }
+
+      .mermaid-diagram {
+        display: block !important;
+        width: 100% !important;
+        text-align: center !important;
+      }
+
+      .mermaid-diagram svg,
+      .mermaid-rendered-img {
+        max-width: 100% !important;
+        height: auto !important;
+        display: block !important;
+        margin: 0 auto !important;
+        overflow: visible !important;
+        page-break-inside: auto !important;
+        break-inside: auto !important;
+      }
+
+      .mermaid-diagram svg text,
+      .mermaid-diagram svg tspan,
+      .mermaid-diagram svg .nodeLabel,
+      .mermaid-diagram svg .edgeLabel {
+        opacity: 1 !important;
+        visibility: visible !important;
+        fill: currentColor !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+
+      .mermaid-diagram svg .node rect,
+      .mermaid-diagram svg .node circle,
+      .mermaid-diagram svg .node polygon,
+      .mermaid-diagram svg .node path {
+        opacity: 1 !important;
+        visibility: visible !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
       }
 
       a {

@@ -53,4 +53,11 @@ describe('styleGenerator', () => {
     const css = generateInlineStyles('minimal', customConfig);
     expect(css).toContain('margin: 35mm');
   });
+
+  it('should include print styles for mermaid-wrapper and diagram svg', () => {
+    const css = generateInlineStyles('tech', baseConfig);
+    expect(css).toContain('.mermaid-wrapper');
+    expect(css).toContain('.mermaid-diagram svg');
+    expect(css).toContain('break-inside: auto !important');
+  });
 });

@@ -56,6 +56,11 @@ export const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({
           theme: 'default',
           securityLevel: 'loose',
           fontFamily: isAcademic ? '"Merriweather", Georgia, serif' : 'Inter, system-ui, sans-serif',
+          flowchart: {
+            htmlLabels: false,
+            useMaxWidth: true,
+            curve: 'basis',
+          },
           themeVariables: {
             primaryColor: isTech ? '#d1fae5' : isExecutive ? '#e0e7ff' : isEditorial ? '#fed7aa' : '#f1f5f9',
             primaryTextColor: '#0f172a',
